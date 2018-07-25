@@ -470,8 +470,7 @@ class NetworkLocationTest(BaseTest):
             [
                 {"reason": "ResourceLocationAbsent",
                 "resource": None},
-            {
-                "security-groups": {web_sg_id: "web"},
+                {"security-groups": {web_sg_id: "web"},
                 "resource": None,
                 "reason": "SecurityGroupMismatch"}],
         )
