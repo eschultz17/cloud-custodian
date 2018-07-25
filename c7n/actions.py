@@ -200,8 +200,7 @@ class ModifyVpcSecurityGroupsAction(Action):
             'isolation-group': {'oneOf': [
                 {'type': 'string', 'pattern': '^sg-*'},
                 {'type': 'array', 'items': {
-                    'type': 'string', 'pattern': '^sg-*'}}]},
-            },
+                    'type': 'string', 'pattern': '^sg-*'}}]}},
         'anyOf': [
             {'required': ['isolation-group', 'remove', 'type']},
             {'required': ['add', 'remove', 'type']},

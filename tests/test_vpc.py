@@ -467,8 +467,13 @@ class NetworkLocationTest(BaseTest):
         matched = resources.pop()
         self.assertEqual(
             matched["c7n:NetworkLocation"],
-            [{"reason": "ResourceLocationAbsent", "resource": None},
-            {"security-groups": {web_sg_id: "web"}, "resource": None, "reason": "SecurityGroupMismatch"}],
+            [
+                {"reason": "ResourceLocationAbsent",
+                "resource": None},
+            {
+                "security-groups": {web_sg_id: "web"},
+                "resource": None,
+                "reason": "SecurityGroupMismatch"}],
         )
 
     @functional
