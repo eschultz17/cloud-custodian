@@ -155,7 +155,13 @@ class NetworkLocation(Filter):
             found = False
             for i in ignores:
                 for k, v in i.items():
-                    if jmespath.search(k, r) == v:
+                    if k.startswith('tag:'):
+                        tk = k.split(':', 1)[1]
+                        if 'Tags' in r:
+                            for t in r.get("Tags", []):
+                                if t.get('Key') == tk and t.get('Value') == v:
+                                    found = True
+                    elif jmespath.search(k, r) == v:
                         found = True
                 if found is True:
                     break
@@ -221,6 +227,17 @@ class NetworkLocation(Filter):
                     'reason': 'ResourceLocationMismatch',
                     'resource': r_value,
                     'subnet': subnet_values})
+            if 'security-group' in self.compare and resource_sgs:
+                temp_sgs = dict(sg_values)
+                if r_value in sg_space:
+                    for sg in sg_values:
+                        if sg_values[sg] == r_value:
+                            del temp_sgs[sg]
+                if len(temp_sgs) > 0:
+                    evaluation.append({
+                        'reason': 'SecurityGroupMismatch',
+                        'resource': r_value,
+                        'security-groups': temp_sgs})
 
         if evaluation and self.match == 'not-equal':
             r['c7n:NetworkLocation'] = evaluation
