@@ -70,6 +70,24 @@ class NetworkLocation(Filter):
     and `security-group` filters suffice. but say for example you wanted to
     verify that an ec2 instance was only using subnets and security groups
     with a given tag value, and that tag was not present on the resource.
+
+    :Example:
+
+    .. code-block:: yaml
+
+        policies:
+          - name: ec2-mismatched-sg-remove
+            resource: ec2
+            filters:
+              - type: network-location
+                compare: ["resource","security-group"]
+                key: "tag:TEAM_NAME"
+                ignore:
+                  - "tag:TEAM_NAME": Enterprise
+            actions:
+              - type: modify-security-groups
+                remove: network-location
+                isolation-group: sg-xxxxxxxx
     """
 
     schema = type_schema(
@@ -155,13 +173,7 @@ class NetworkLocation(Filter):
             found = False
             for i in ignores:
                 for k, v in i.items():
-                    if k.startswith('tag:'):
-                        tk = k.split(':', 1)[1]
-                        if 'Tags' in r:
-                            for t in r.get("Tags", []):
-                                if t.get('Key') == tk and t.get('Value') == v:
-                                    found = True
-                    elif jmespath.search(k, r) == v:
+                    if self.vf.get_resource_value(k, r) == v:
                         found = True
                 if found is True:
                     break
@@ -228,11 +240,7 @@ class NetworkLocation(Filter):
                     'resource': r_value,
                     'subnet': subnet_values})
             if 'security-group' in self.compare and resource_sgs:
-                temp_sgs = dict(sg_values)
-                if r_value in sg_space:
-                    for sg in sg_values:
-                        if sg_values[sg] == r_value:
-                            del temp_sgs[sg]
+                temp_sgs = {sg_id:sg_value for sg_id, sg_value in sg_values.items() if sg_value != r_value}
                 if len(temp_sgs) > 0:
                     evaluation.append({
                         'reason': 'SecurityGroupMismatch',
