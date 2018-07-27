@@ -19,8 +19,6 @@ from c7n.utils import local_session, type_schema
 from .core import Filter, ValueFilter
 from .related import RelatedResourceFilter
 
-import jmespath
-
 
 class SecurityGroupFilter(RelatedResourceFilter):
     """Filter a resource by its associated security groups."""
@@ -240,7 +238,9 @@ class NetworkLocation(Filter):
                     'resource': r_value,
                     'subnet': subnet_values})
             if 'security-group' in self.compare and resource_sgs:
-                temp_sgs = {sg_id:sg_value for sg_id, sg_value in sg_values.items() if sg_value != r_value}
+                temp_sgs = {sg_id: sg_value
+                            for sg_id, sg_value in sg_values.items()
+                            if sg_value != r_value}
                 if len(temp_sgs) > 0:
                     evaluation.append({
                         'reason': 'SecurityGroupMismatch',
