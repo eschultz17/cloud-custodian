@@ -280,7 +280,7 @@ class ModifyVpcSecurityGroupsAction(Action):
             elif remove_target_group_ids == 'network-location':
                 for reason in r.get('c7n:NetworkLocation', ()):
                     if reason['reason'] == 'SecurityGroupMismatch':
-                        remove_groups = [sg for sg in reason['security-groups']]
+                        remove_groups = list(reason['security-groups'])
             elif remove_target_group_ids == 'all':
                 remove_groups = rgroups
             elif isinstance(remove_target_group_ids, list):

@@ -238,14 +238,14 @@ class NetworkLocation(Filter):
                     'resource': r_value,
                     'subnet': subnet_values})
             if 'security-group' in self.compare and resource_sgs:
-                temp_sgs = {sg_id: sg_value
-                            for sg_id, sg_value in sg_values.items()
-                            if sg_value != r_value}
-                if len(temp_sgs) > 0:
+                mismatched_sgs = {sg_id: sg_value
+                                for sg_id, sg_value in sg_values.items()
+                                if sg_value != r_value}
+                if mismatched_sgs:
                     evaluation.append({
                         'reason': 'SecurityGroupMismatch',
                         'resource': r_value,
-                        'security-groups': temp_sgs})
+                        'security-groups': mismatched_sgs})
 
         if evaluation and self.match == 'not-equal':
             r['c7n:NetworkLocation'] = evaluation
