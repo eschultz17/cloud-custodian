@@ -203,11 +203,11 @@ class ModifyVpcSecurityGroupsAction(Action):
             add_target_group_names.extend(group_names)
 
         elif isinstance(add_target_group_ids, six.text_type) \
-            and not add_target_group_ids.startswith('sg-'):
-                # Can assume sg's won't start with 'sg-'
-                # https://docs.aws.amazon.com/cli/latest/reference/ec2/create-security-group.html
-                group_names = self.resolve_security_group_names([add_target_group_ids])
-                add_target_group_names.extend(group_names)
+                and not add_target_group_ids.startswith('sg-'):
+            # Can assume sg's won't start with 'sg-'
+            # https://docs.aws.amazon.com/cli/latest/reference/ec2/create-security-group.html
+            group_names = self.resolve_security_group_names([add_target_group_ids])
+            add_target_group_names.extend(group_names)
 
         if isinstance(remove_target_group_ids, list):
             remove_names = [name for name in remove_target_group_ids if not name.startswith('sg-')]
@@ -215,18 +215,18 @@ class ModifyVpcSecurityGroupsAction(Action):
             remove_target_group_names.extend(group_names)
 
         elif isinstance(remove_target_group_ids, six.text_type) \
-            and not remove_target_group_ids.startswith('sg-'):
-                # Can assume sg's won't start with 'sg-'
-                # https://docs.aws.amazon.com/cli/latest/reference/ec2/create-security-group.html
-                group_names = self.resolve_security_group_names([remove_target_group_ids])
-                remove_target_group_names.extend(group_names)
+                and not remove_target_group_ids.startswith('sg-'):
+            # Can assume sg's won't start with 'sg-'
+            # https://docs.aws.amazon.com/cli/latest/reference/ec2/create-security-group.html
+            group_names = self.resolve_security_group_names([remove_target_group_ids])
+            remove_target_group_names.extend(group_names)
 
         if isinstance(isolation_group, six.text_type) \
-            and not isolation_group.startswith('sg-'):
-                # Can assume sg's won't start with 'sg-'
-                # https://docs.aws.amazon.com/cli/latest/reference/ec2/create-security-group.html
-                group_names = self.resolve_security_group_names([isolation_group])
-                isolation_group_names.extend(group_names)
+                and not isolation_group.startswith('sg-'):
+            # Can assume sg's won't start with 'sg-'
+            # https://docs.aws.amazon.com/cli/latest/reference/ec2/create-security-group.html
+            group_names = self.resolve_security_group_names([isolation_group])
+            isolation_group_names.extend(group_names)
 
         for idx, r in enumerate(resources):
             rgroups = self.get_resource_security_groups(r, metadata_key)
