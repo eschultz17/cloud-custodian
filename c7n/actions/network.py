@@ -185,11 +185,11 @@ class ModifyVpcSecurityGroupsAction(Action):
         # list of security groups that will end up on the resource
         # target_group_ids = self.data.get('groups', 'matched')
 
-        add_target_group_ids = self.data.get('add')
+        add_target_group_ids = self.data.get('add',None)
         add_target_group_names = list()
-        remove_target_group_ids = self.data.get('remove')
+        remove_target_group_ids = self.data.get('remove',None)
         remove_target_group_names = list()
-        isolation_group = self.data.get('isolation-group')
+        isolation_group = self.data.get('isolation-group',None)
         isolation_group_names = list()
         add_groups = []
         remove_groups = []
