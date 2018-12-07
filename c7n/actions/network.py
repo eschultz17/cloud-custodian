@@ -202,7 +202,7 @@ class ModifyVpcSecurityGroupsAction(Action):
             group_names = self.resolve_security_group_names(add_names)
             add_target_group_names.extend(group_names)
 
-        elif isinstance(add_target_group_ids, six.text_type)
+        elif isinstance(add_target_group_ids, six.text_type) \
             and not add_target_group_ids.startswith('sg-'):
             # Can assume sg's won't start with 'sg-'
             # https://docs.aws.amazon.com/cli/latest/reference/ec2/create-security-group.html
@@ -214,14 +214,14 @@ class ModifyVpcSecurityGroupsAction(Action):
             group_names = self.resolve_security_group_names(remove_names)
             remove_target_group_names.extend(group_names)
 
-        elif isinstance(remove_target_group_ids, six.text_type)
+        elif isinstance(remove_target_group_ids, six.text_type) \
             and not remove_target_group_ids.startswith('sg-'):
             # Can assume sg's won't start with 'sg-'
             # https://docs.aws.amazon.com/cli/latest/reference/ec2/create-security-group.html
             group_names = self.resolve_security_group_names([remove_target_group_ids])
             remove_target_group_names.extend(group_names)
 
-        if isinstance(isolation_group, six.text_type)
+        if isinstance(isolation_group, six.text_type) \
             and not isolation_group.startswith('sg-'):
             # Can assume sg's won't start with 'sg-'
             # https://docs.aws.amazon.com/cli/latest/reference/ec2/create-security-group.html
