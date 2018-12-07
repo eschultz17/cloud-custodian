@@ -114,7 +114,7 @@ class ModifyVpcSecurityGroupsAction(Action):
 
         if isinstance(target_group_ids, list):
             groups = [sg_id for sg_id in target_group_ids if sg_id.startswith('sg-')]
-        elif isinstance(target_group_ids, six.string_types):
+        elif isinstance(target_group_ids, six.text_type):
             if target_group_ids.startswith('sg-'):
                 groups = [target_group_ids]
 
@@ -201,10 +201,6 @@ class ModifyVpcSecurityGroupsAction(Action):
 
         elif isinstance(add_target_group_ids, six.text_type) and not add_target_group_ids.startswith('sg-'):
             # Can assume sg's won't start with 'sg-'
-            #
-            # The name of the security group.
-            #    Constraints: Up to 255 characters in length. Cannot start with sg- .
-            #
             # https://docs.aws.amazon.com/cli/latest/reference/ec2/create-security-group.html
             add_target_group_names.extend(self.resolve_security_group_names([add_target_group_ids]))
 
@@ -214,20 +210,12 @@ class ModifyVpcSecurityGroupsAction(Action):
 
         elif isinstance(remove_target_group_ids, six.text_type) and not remove_target_group_ids.startswith('sg-'):
             # Can assume sg's won't start with 'sg-'
-            #
-            # The name of the security group.
-            #    Constraints: Up to 255 characters in length. Cannot start with sg- .
-            #
             # https://docs.aws.amazon.com/cli/latest/reference/ec2/create-security-group.html
 
             remove_target_group_names.extend(self.resolve_security_group_names([remove_target_group_ids]))
 
         if isinstance(isolation_group, six.text_type) and not isolation_group.startswith('sg-'):
             # Can assume sg's won't start with 'sg-'
-            #
-            # The name of the security group.
-            #    Constraints: Up to 255 characters in length. Cannot start with sg- .
-            #
             # https://docs.aws.amazon.com/cli/latest/reference/ec2/create-security-group.html
 
             isolation_group_names.extend(self.resolve_security_group_names([isolation_group]))
