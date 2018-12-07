@@ -1138,7 +1138,7 @@ class TestModifySecurityGroupsActionSchema(BaseTest):
         }
         self.assertRaises(ValidationError, self.load_policy, policy, validate=True)
 
-    def test_invalid_add_params(self):
+    def test_valid_add_params(self):
         # string invalid
         policy = {
             "name": "add-with-incorrect-param-string",
@@ -1151,7 +1151,7 @@ class TestModifySecurityGroupsActionSchema(BaseTest):
                 },
             ],
         }
-        self.assertRaises(ValidationError, self.load_policy, data=policy, validate=True)
+        self.assertTrue(self.load_policy(data=policy, validate=True))
 
     def test_invalid_isolation_group_params(self):
         policy = {
@@ -1339,6 +1339,51 @@ class TestModifySecurityGroupAction(BaseTest):
         self.assertEqual(len(first_resources[0]["NetworkInterfaces"][0]["Groups"]), 1)
         second_resources = policy.run()
         self.assertEqual(len(second_resources[0]["NetworkInterfaces"][0]["Groups"]), 2)
+
+    def test_add_remove_with_name(self):
+        session_factory = self.replay_flight_data("test_ec2_modify_groups_action_with_name")
+        policy = self.load_policy(
+            {
+                "name": "add-remove-sg-with-name",
+                "resource": "ec2",
+                "filters": [
+                    {
+                        "type": "security-group",
+                        "key": "GroupName",
+                        "value": "launch-wizard-2"
+                    }
+                ],
+                "actions": [
+                    {
+                        "type": "modify-security-groups",
+                        "remove": ["launch-wizard-2"],
+                        "add": "launch-wizard-1"
+                    }
+                ]
+            },
+            session_factory=session_factory,
+        )
+        resources = policy.run()
+        self.assertEquals(len(resources), 1)
+
+        policy = self.load_policy(
+            {
+                "name": "check-ec2",
+                "resource": "ec2",
+                "filters": [
+                    {
+                        "type": "security-group",
+                        "key": "GroupName",
+                        "value": "launch-wizard-1"
+                    }
+                ],
+            },
+            session_factory=session_factory,
+        )
+        new_resources = policy.run()
+        self.assertEquals(len(new_resources), 1)
+
+        self.assertEquals(resources[0]['InstanceId'], new_resources[0]['InstanceId'])
 
 
 class TestAutoRecoverAlarmAction(BaseTest):
