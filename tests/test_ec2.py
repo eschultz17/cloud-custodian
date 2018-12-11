@@ -1364,7 +1364,7 @@ class TestModifySecurityGroupAction(BaseTest):
             session_factory=session_factory,
         )
         resources = policy.run()
-        self.assertEquals(len(resources), 1)
+        self.assertEqual(len(resources), 1)
 
         policy = self.load_policy(
             {
@@ -1381,9 +1381,9 @@ class TestModifySecurityGroupAction(BaseTest):
             session_factory=session_factory,
         )
         new_resources = policy.run()
-        self.assertEquals(len(new_resources), 1)
+        self.assertEqual(len(new_resources), 1)
 
-        self.assertEquals(resources[0]['InstanceId'], new_resources[0]['InstanceId'])
+        self.assertEqual(resources[0]['InstanceId'], new_resources[0]['InstanceId'])
 
 
 class TestAutoRecoverAlarmAction(BaseTest):

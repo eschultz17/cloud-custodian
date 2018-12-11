@@ -62,12 +62,26 @@ class ModifyVpcSecurityGroupsAction(Action):
             {'required': ['add', 'type']}]
     }
 
-    def resolve_security_group_names(self, group_names):
+    def get_security_group_ids_and_names(self, data):
         """
-        Resolves Security Group names to Ids.
+        Returns Security Group ids and names.
         Raises PolicyExecutionError if group names are not found
         """
-        if group_names:
+        group_ids = []
+        group_names = []
+
+        # Can assume sg's won't start with 'sg-'
+        # https://docs.aws.amazon.com/cli/latest/reference/ec2/create-security-group.html
+        if isinstance(data, list):
+            group_ids = [id for id in data if id.startswith('sg-')]
+            group_names = [name for name in data if not name.startswith('sg-')]
+        elif isinstance(data, six.string_types):
+            if data.startswith('sg-') or data in ["all", "matched", "network-location"]:
+                group_ids = [data]
+            else:
+                group_names = [data]
+
+        if len(group_names) > 0:
             client = utils.local_session(
                 self.manager.session_factory).client('ec2')
 
@@ -88,14 +102,14 @@ class ModifyVpcSecurityGroupsAction(Action):
                 }
                 for a in filtered_sgs
             ]
-            if not filtered_ids:
+            if not filtered_ids or len(filtered_ids) == 0:
                 raise PolicyExecutionError(
                     "Security Groups not found: requested: %s, found: %s" %
                     (group_names, filtered_ids))
-            return filtered_ids
-        return []
+            group_names = filtered_ids
+        return group_ids, group_names
 
-    def parse_groups(self, r, target_group_ids, rgroups, action):
+    def parse_groups(self, r, target_group_ids, target_group_names, rgroups, action):
         """
         Parse user-provided groups in policy and resolves security groups
         from either names or whitelisted names (matched, network-location, all)
@@ -104,21 +118,19 @@ class ModifyVpcSecurityGroupsAction(Action):
 
         if action == 'remove':
             # Parse remove_groups
-            if target_group_ids == 'matched':
+            if 'matched' in target_group_ids:
                 return r.get('c7n:matched-security-groups', ())
-            elif target_group_ids == 'network-location':
+            elif 'network-location' in target_group_ids:
                 for reason in r.get('c7n:NetworkLocation', ()):
                     if reason['reason'] == 'SecurityGroupMismatch':
-                        groups = list(reason['security-groups'])
-                return groups
-            elif target_group_ids == 'all':
+                        return list(reason['security-groups'])
+            elif 'all' in target_group_ids:
                 return rgroups
 
-        if isinstance(target_group_ids, list):
-            groups = [sg_id for sg_id in target_group_ids if sg_id.startswith('sg-')]
-        elif isinstance(target_group_ids, six.text_type):
-            if target_group_ids.startswith('sg-'):
-                groups = [target_group_ids]
+        group_names_ids = [g['GroupId'] for g in target_group_names
+            if g.get('VpcId', None) == r.get('VpcId', None)]
+        # removes duplicate values
+        groups = list(set(group_names_ids + target_group_ids))
 
         return groups
 
@@ -187,61 +199,18 @@ class ModifyVpcSecurityGroupsAction(Action):
         # list of security groups that will end up on the resource
         # target_group_ids = self.data.get('groups', 'matched')
 
-        add_target_group_ids = self.data.get('add', None)
-        add_target_group_names = list()
-        remove_target_group_ids = self.data.get('remove', None)
-        remove_target_group_names = list()
-        isolation_group = self.data.get('isolation-group', None)
-        isolation_group_names = list()
-        add_groups = []
-        remove_groups = []
+        add_ids, add_names = self.get_security_group_ids_and_names(
+            self.data.get('add', None))
+        remove_ids, remove_names = self.get_security_group_ids_and_names(
+            self.data.get('remove', None))
+        isolation_ids, isolation_names = self.get_security_group_ids_and_names(
+            self.data.get('isolation-group', None))
         return_groups = []
-
-        if isinstance(add_target_group_ids, list):
-            add_names = [name for name in add_target_group_ids if not name.startswith('sg-')]
-            group_names = self.resolve_security_group_names(add_names)
-            add_target_group_names.extend(group_names)
-
-        elif isinstance(add_target_group_ids, six.text_type) \
-                and not add_target_group_ids.startswith('sg-'):
-            # Can assume sg's won't start with 'sg-'
-            # https://docs.aws.amazon.com/cli/latest/reference/ec2/create-security-group.html
-            group_names = self.resolve_security_group_names([add_target_group_ids])
-            add_target_group_names.extend(group_names)
-
-        if isinstance(remove_target_group_ids, list):
-            remove_names = [name for name in remove_target_group_ids if not name.startswith('sg-')]
-            group_names = self.resolve_security_group_names(remove_names)
-            remove_target_group_names.extend(group_names)
-
-        elif isinstance(remove_target_group_ids, six.text_type) \
-                and not remove_target_group_ids.startswith('sg-'):
-            # Can assume sg's won't start with 'sg-'
-            # https://docs.aws.amazon.com/cli/latest/reference/ec2/create-security-group.html
-            group_names = self.resolve_security_group_names([remove_target_group_ids])
-            remove_target_group_names.extend(group_names)
-
-        if isinstance(isolation_group, six.text_type) \
-                and not isolation_group.startswith('sg-'):
-            # Can assume sg's won't start with 'sg-'
-            # https://docs.aws.amazon.com/cli/latest/reference/ec2/create-security-group.html
-            group_names = self.resolve_security_group_names([isolation_group])
-            isolation_group_names.extend(group_names)
 
         for idx, r in enumerate(resources):
             rgroups = self.get_resource_security_groups(r, metadata_key)
-            if len(add_target_group_names) > 0:
-                if not isinstance(add_target_group_ids, list):
-                    add_target_group_ids = list(add_target_group_ids)
-                add_target_group_ids.extend([g['GroupId'] for g in add_target_group_names
-                    if g.get('VpcId', None) == r.get('VpcId', None)])
-            add_groups = self.parse_groups(r, add_target_group_ids, rgroups, "add")
-            if len(remove_target_group_names) > 0:
-                if not isinstance(remove_target_group_ids, list):
-                    remove_target_group_ids = list(remove_target_group_ids)
-                remove_target_group_ids.extend([g['GroupId'] for g in remove_target_group_names
-                    if g.get('VpcId', None) == r.get('VpcId', None)])
-            remove_groups = self.parse_groups(r, remove_target_group_ids, rgroups, "remove")
+            add_groups = self.parse_groups(r, add_ids, add_names, rgroups, "add")
+            remove_groups = self.parse_groups(r, remove_ids, remove_names, rgroups, "remove")
 
             # seems extraneous with list?
             # if not remove_groups and not add_groups:
@@ -255,10 +224,7 @@ class ModifyVpcSecurityGroupsAction(Action):
                     rgroups.append(g)
 
             if not rgroups:
-                if len(isolation_group_names) > 0:
-                    isolation_group = [g['GroupId'] for g in isolation_group_names
-                        if g.get('VpcId', None) == r.get('VpcId', None)][0]
-                rgroups = self.parse_groups(r, isolation_group, rgroups, "isolation")
+                rgroups = self.parse_groups(r, isolation_ids, isolation_names, rgroups, "isolation")
 
             return_groups.append(rgroups)
 
