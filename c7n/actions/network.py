@@ -62,6 +62,21 @@ class ModifyVpcSecurityGroupsAction(Action):
             {'required': ['add', 'type']}]
     }
 
+    def get_resource_vpc(self, r):
+        """
+        Returns the resource's VPC ID
+        """
+        vpc = r.get('VpcId', None)
+        lambda_vpc_config = r.get('VpcConfig', None)
+        elb_vpc = r.get('VPCId', None)
+
+        if lambda_vpc_config is not None:
+            return lambda_vpc_config.get('VpcId', None)
+        elif elb_vpc is not None:
+            return elb_vpc
+        else:
+            return vpc
+
     def get_security_group_ids_and_names(self, data):
         """
         Returns Security Group ids and names.
@@ -128,7 +143,7 @@ class ModifyVpcSecurityGroupsAction(Action):
                 return rgroups
 
         group_names_ids = [g['GroupId'] for g in target_group_names
-            if g.get('VpcId', None) == r.get('VpcId', None)]
+            if g.get('VpcId', None) == self.get_resource_vpc(r)]
         # removes duplicate values
         groups = list(set(group_names_ids + target_group_ids))
 
