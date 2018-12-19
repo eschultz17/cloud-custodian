@@ -467,3 +467,107 @@ class DistributionSSLAction(BaseAction):
                 "Exception trying to force ssl on Distribution: %s error: %s",
                 distribution['ARN'], e)
             return
+
+@Distribution.action_registry.register('delete')
+class DistributionDeleteAction(BaseAction):
+    """Action to delete a Distribution
+
+    :example:
+
+    .. code-block:: yaml
+
+            policies:
+              - name: distribution-delete
+                resource: distribution
+                filters:
+                  - type: value
+                    key: CacheBehaviors.Items[].ViewerProtocolPolicy
+                    value: allow-all
+                    op: contains
+                actions:
+                  - type: delete
+    """
+    schema = type_schema('delete')
+    permissions = ("distribution:GetDistributionConfig",
+                   "distribution:UpdateDistribution",
+                   "distribution:DeleteDistribution")
+
+    def process(self, distributions):
+        client = local_session(
+            self.manager.session_factory).client(self.manager.get_model().service)
+
+        for d in distributions:
+            self.process_distribution(client, d)
+
+    def process_distribution(self, client, distribution):
+        try:
+            res = client.get_distribution_config(
+                Id=distribution[self.manager.get_model().id])
+            if res['DistributionConfig']['Enabled']:
+                res['DistributionConfig']['Enabled'] = False
+                res = client.update_distribution(
+                    Id=distribution[self.manager.get_model().id],
+                    IfMatch=res['ETag'],
+                    DistributionConfig=res['DistributionConfig']
+                )
+            res = client.delete_distribution(
+                Id=distribution[self.manager.get_model().id],
+                IfMatch=res['ETag']
+            )
+        except Exception as e:
+            self.log.warning(
+                "Exception trying to delete Distribution: %s error: %s",
+                distribution['ARN'], e)
+            return
+
+
+@StreamingDistribution.action_registry.register('delete')
+class StreamingDistributionDeleteAction(BaseAction):
+    """Action to delete a Streaming Distribution
+
+    :example:
+
+    .. code-block:: yaml
+
+            policies:
+              - name: streaming-distribution-delete
+                resource: streaming-distribution
+                filters:
+                  - type: value
+                    key: S3Origin.OriginAccessIdentity
+                    value: ''
+                actions:
+                  - type: delete
+    """
+    schema = type_schema('delete')
+
+    permissions = ("streaming-distribution:GetStreamingDistributionConfig",
+                   "streaming-distribution:UpdateStreamingDistribution",
+                   "streaming-distribution:DeleteStreamingDistribution")
+
+    def process(self, distributions):
+        client = local_session(
+            self.manager.session_factory).client(self.manager.get_model().service)
+        for d in distributions:
+            self.process_distribution(client, d)
+
+    def process_distribution(self, client, distribution):
+        try:
+            res = client.get_streaming_distribution_config(
+                Id=distribution[self.manager.get_model().id])
+            if res['StreamingDistributionConfig']['Enabled']:
+                res['StreamingDistributionConfig']['Enabled'] = False
+                res = client.update_streaming_distribution(
+                    Id=distribution[self.manager.get_model().id],
+                    IfMatch=res['ETag'],
+                    StreamingDistributionConfig=res['StreamingDistributionConfig']
+                )
+            res = client.delete_streaming_distribution(
+                Id=distribution[self.manager.get_model().id],
+                IfMatch=res['ETag']
+            )
+        except Exception as e:
+            self.log.warning(
+                "Exception trying to delete Distribution: %s error: %s",
+                distribution['ARN'], e)
+            return
